@@ -1,0 +1,573 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+	<title>New document</title>
+	<meta http-equiv="content-type" content="text/html; charset=iso-8859-1" />
+</head>
+<body>
+<div><br /><br /><br /><br /><br />
+	<div id="domElement" style="">sad sad sadsa dsadsa</div>
+</div>
+<script type="text/javascript">
+    function Fader() {
+	}
+
+    Fader.prototype.start = function() {
+        if (this.template) {
+            if (this.fadeDuration) {
+                if (this.fadePanel)
+                    Fader.removeNode(this.fadePanel);
+                this.fadePanel = document.createElement("div");
+                this.fadePanel.style.zIndex = 90210;
+                this.fadePanel.style.position = "absolute";
+                this.fadePanel.style.width = Fader.Size.getAdjustedWidth(this.fadeElement) + "px";
+                this.fadePanel.style.height = Fader.Size.getAdjustedHeight(this.fadeElement) + "px";
+                this.fadePanel.style.left = Fader.Offset.getAdjustedOffsetLeft(this.fadeElement) + "px";
+                this.fadePanel.style.top = Fader.Offset.getAdjustedOffsetTop(this.fadeElement) + "px";
+                this.fadePanel.innerHTML = this.template;
+                this.fadePanel.fadeStartTime = (new Date());
+                if (Fader.Browser.ie) {
+                    this.fadePanel.style.filter = "alpha(opacity=0)";
+                } else {
+                    this.fadePanel.style.opacity = 0;
+                    this.fadePanel.style.setProperty("-moz-opacity", 0, "");
+                }
+                document.body.insertBefore(this.fadePanel, document.body.firstChild);
+                if (arguments != null && arguments.length == 1 && arguments[0] === true)
+					this.fade(true);
+				else
+					this.fade(false);
+            } else {
+                this.fadeElement.innerHTML = this.template;
+            }
+        }
+    };
+
+    Fader.prototype.fade = function (fadein) {
+        if (this.fadePanel) {
+            var fadeStartTime = (new Date()).getTime() - this.fadePanel.fadeStartTime;
+            var duration = Fader.SlidePortion.completed(fadeStartTime, this.fadeDuration, 2);
+            var opacity = fadein ? duration : (1 - duration);
+            opacity = (opacity * Math.max(0, Math.min(100, this.FadeMaxOpacity))) / 100;
+            if (Fader.Browser.ie) {
+                this.fadePanel.style.filter = "alpha(opacity=" + (opacity * 100) + ")";
+            } else {
+                this.fadePanel.style.opacity = opacity;
+                this.fadePanel.style.setProperty("-moz-opacity", opacity, "");
+            }
+            if (opacity == 0 || opacity == 1) {
+                if (typeof(this.onComplete) == "function")
+                    this.onComplete(fadein);
+			}
+            if (duration == 1) {
+                if (!fadein) {
+                    Fader.removeNode(this.fadePanel);
+                    this.fadePanel = null;
+                }
+            } else {
+				if (this.fadeTimeout)
+                    clearTimeout(this.fadeTimeout);
+                var self = this;
+                var f = function() {
+					self.fade(fadein);
+				};
+
+                this.fadeTimeout = setTimeout(f, 20);
+            }
+        }
+    };
+
+    Fader.Browser = new function() {
+		this.searchString = function (data) {
+			for (var i=0;i<data.length;i++)	{
+				var dataString = data[i].string;
+				var dataProp = data[i].prop;
+				this.versionSearchString = data[i].versionSearch || data[i].identity;
+				if (dataString) {
+					if (dataString.indexOf(data[i].subString) != -1)
+						return data[i].identity;
+				}
+				else if (dataProp)
+					return data[i].identity;
+			}
+		};
+
+		this.searchVersion = function (dataString) {
+			var index = dataString.indexOf(this.versionSearchString);
+			if (index == -1)
+				return;
+			return parseFloat(dataString.substring(index+this.versionSearchString.length+1));
+		};
+
+		var dataBrowser = [
+			{
+				string: navigator.userAgent,
+				subString: "Chrome",
+				identity: "Chrome"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "OmniWeb",
+				versionSearch: "OmniWeb/",
+				identity: "OmniWeb"
+			},
+			{
+				string: navigator.vendor,
+				subString: "Apple",
+				identity: "Safari",
+				versionSearch: "Version"
+			},
+			{
+				prop: window.opera,
+				identity: "Opera",
+				versionSearch: "Version"
+			},
+			{
+				string: navigator.vendor,
+				subString: "iCab",
+				identity: "iCab"
+			},
+			{
+				string: navigator.vendor,
+				subString: "KDE",
+				identity: "Konqueror"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "Firefox",
+				identity: "Firefox"
+			},
+			{
+				string: navigator.vendor,
+				subString: "Camino",
+				identity: "Camino"
+			},
+			{		// for newer Netscapes (6+)
+				string: navigator.userAgent,
+				subString: "Netscape",
+				identity: "Netscape"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "MSIE",
+				identity: "Explorer",
+				versionSearch: "MSIE"
+			},
+			{
+				string: navigator.userAgent,
+				subString: "Gecko",
+				identity: "Mozilla",
+				versionSearch: "rv"
+			},
+			{ 		// for older Netscapes (4-)
+				string: navigator.userAgent,
+				subString: "Mozilla",
+				identity: "Netscape",
+				versionSearch: "Mozilla"
+			}];
+
+		var dataOS = [
+			{
+				string: navigator.platform,
+				subString: "Win",
+				identity: "Windows"
+			},
+			{
+				string: navigator.platform,
+				subString: "Mac",
+				identity: "Mac"
+			},
+			{
+				   string: navigator.userAgent,
+				   subString: "iPhone",
+				   identity: "iPhone/iPod"
+		    },
+			{
+				string: navigator.platform,
+				subString: "Linux",
+				identity: "Linux"
+			}];
+
+		this.browser = this.searchString(dataBrowser) || "An unknown browser";
+		this.version = this.searchVersion(navigator.userAgent) || this.searchVersion(navigator.appVersion) || "an unknown version";
+		this.os = this.searchString(dataOS) || "an unknown OS";
+
+		var agent = (navigator == null || navigator.userAgent == null) ? "" : navigator.userAgent.toLowerCase();
+		this.opera = this.browser == "Opera";
+		this.mac = this.os == "Mac";
+		this.ie = this.browser == "Explorer";
+		this.iemac = this.ie && this.mac;
+		this.safari = this.browser == "Safari";
+		this.konqueror = this.browser == "Konqueror";
+		this.firefox = this.browser == "Firefox";
+		this.ie3 = this.ie && (this.version < 4);
+		this.ie4 = this.ie && (this.version == 4) && (agent.indexOf("msie 4") != -1);
+		this.ie5point5 = this.ie && (this.version == 4) && (agent.indexOf("msie 5.5") != -1);
+		this.ie5 = this.ie && (this.version == 4) && (agent.indexOf("msie 5") != -1) && !this.ie5point5;
+		this.ie6plus = this.ie && !this.ie3 && !this.ie4 && !this.ie5 && !this.ie5point5;
+		this.ie7plus = this.ie6plus && (agent.indexOf("msie 6") == -1);
+		this.ie8 = this.ie7plus && (agent.indexOf("msie 8") != -1);
+	};
+
+	Fader.removeNode = function (element) {
+        if (element) {
+            if (document.all) {
+                element.removeNode(true);
+            } else { if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            }
+        }
+    };
+
+    Fader.Size = new function() {
+	    this.getAdjustedHeight = function (el, def) {
+	        if (!el)
+	            return (def ? def : 0);
+	        if (!def && def != 0)
+	            def = el.offsetHeight;
+	        if (Fader.Browser.ie && el.currentStyle) {
+	            var style = el.currentStyle;
+	            if (style) {
+	                var h = 0;
+	                h += isNaN(parseInt(style.borderTopWidth)) ? 0 : parseInt(style.borderTopWidth);
+	                h += isNaN(parseInt(style.borderBottomWidth)) ? 0 : parseInt(style.borderBottomWidth);
+	                h += isNaN(parseInt(style.paddingTop)) ? 0 : parseInt(style.paddingTop);
+	                h += isNaN(parseInt(style.paddingBottom)) ? 0 : parseInt(style.paddingBottom);
+	                def -= h;
+	            }
+	        } else {
+				if (document.defaultView && document.defaultView.getComputedStyle) {
+	                var style = document.defaultView.getComputedStyle(el, "");
+	                if (style) {
+	                    var h = 0;
+	                    h += style.getPropertyValue("border-top-width") ? parseInt(style.getPropertyValue("border-top-width")) : 0;
+	                    h += style.getPropertyValue("border-bottom-width") ? parseInt(style.getPropertyValue("border-bottom-width")) : 0;
+	                    h += style.getPropertyValue("padding-top") ? parseInt(style.getPropertyValue("padding-top")) : 0;
+	                    h += style.getPropertyValue("padding-bottom") ? parseInt(style.getPropertyValue("padding-bottom")) : 0;
+	                    def -= h;
+	                }
+	            }
+	        }
+	        return def;
+	    };
+
+	    this.getAdjustedWidth = function (el, def) {
+	        if (!el)
+	            return (def ? def : 0);
+	        if (!def && def != 0)
+	            def = el.offsetWidth;
+	        if (Fader.Browser.ie && el.currentStyle) {
+	            var style = el.currentStyle;
+	            if (style) {
+	                var w = 0;
+	                w += isNaN(parseInt(style.borderLeftWidth)) ? 0 : parseInt(style.borderLeftWidth);
+	                w += isNaN(parseInt(style.borderRightWidth)) ? 0 : parseInt(style.borderRightWidth);
+	                w += isNaN(parseInt(style.paddingLeft)) ? 0 : parseInt(style.paddingLeft);
+	                w += isNaN(parseInt(style.paddingRight)) ? 0 : parseInt(style.paddingRight);
+	                def -= w;
+	            }
+	        } else {
+				if (document.defaultView && document.defaultView.getComputedStyle) {
+	                var style = document.defaultView.getComputedStyle(el, "");
+	                if (style) {
+	                    var w = 0;
+	                    w += style.getPropertyValue("border-left-width") ? parseInt(style.getPropertyValue("border-left-width")) : 0;
+	                    w += style.getPropertyValue("border-right-width") ? parseInt(style.getPropertyValue("border-right-width")) : 0;
+	                    w += style.getPropertyValue("padding-left") ? parseInt(style.getPropertyValue("padding-left")) : 0;
+	                    w += style.getPropertyValue("padding-right") ? parseInt(style.getPropertyValue("padding-right")) : 0;
+	                    def -= w;
+	                }
+	            }
+	        }
+	        return def;
+	    };
+	};
+
+	Fader.Offset = new function() {
+	    this.getAdjustedOffsetLeft = function (o, rel, abs) {
+	        var x = Fader.Browser.ie ? this.get_ie_adjusted_offsetleft(o) : this.get_nonie_adjusted_offsetleft(o);
+	        if (rel) {
+	            var offsetLeft = this.cart_getoffset_x(o, "relative");
+	            x -= offsetLeft;
+	        }
+	        if (abs) {
+	            var offsetLeft = this.cart_getoffset_x(o, "absolute");
+	            x -= offsetLeft;
+	        }
+
+	        if (rel || abs)
+	            x = x < 0 ? 0 : x;
+	        return x;
+	    };
+
+	    this.getAdjustedOffsetTop = function (o, rel, abs) {
+	        var y = Fader.Browser.ie ? this.get_ie_adjusted_offsettop(o) : this.get_nonie_adjusted_offsettop(o);
+	        if (rel) {
+	            var offsetTop = this.cart_getoffset_y(o, "relative");
+	            y -= offsetTop;
+	        }
+	        if (abs) {
+	            var offsetTop = this.cart_getoffset_y(o, "absolute");
+	            y -= offsetTop;
+	        }
+
+	        if (rel || abs)
+	            y = y < 0 ? 0 : y;
+	        return y;
+	    };
+
+		this.cart_getoffset_x = function (o, position) {
+	        while (o.parentNode && o.parentNode != document.body) {
+	            if (Fader.Browser.ie && o.currentStyle) {
+	                if (o.currentStyle.position == position)
+	                    return position == "absolute" ? parseInt(o.currentStyle.left) : this.getAdjustedOffsetLeft(o);
+	            } else {
+					if (document.defaultView && document.defaultView.getComputedStyle) {
+	                    var style = document.defaultView.getComputedStyle(o, "");
+	                    if (style.position == position)
+	                        return position == "absolute" ? parseInt(style.getPropertyValue("left")) : this.getAdjustedOffsetLeft(o);
+	                }
+	            }
+	            o = o.parentNode;
+	        }
+	        return 0;
+	    };
+
+		this.cart_getoffset_y = function (o, position) {
+	        while (o.parentNode && o.parentNode != document.body) {
+	            if (Fader.Browser.ie && o.currentStyle) {
+	                if (o.currentStyle.position == position)
+	                    return position == "absolute" ? parseInt(o.currentStyle.top) : this.getAdjustedOffsetTop(o);
+	            } else {
+					if (document.defaultView && document.defaultView.getComputedStyle) {
+	                    var style = document.defaultView.getComputedStyle(o, "");
+	                    if (style.position == position)
+	                        return position == "absolute" ? parseInt(style.getPropertyValue("top")) : this.getAdjustedOffsetTop(o);
+	                }
+	            }
+	            o = o.parentNode;
+	        }
+	        return 0;
+	    };
+
+		this.get_ie_adjusted_offsetleft = function (o) {
+	        return (Fader.Browser.iemac ? this.get_iemac_offsetleft(o) : Fader.Browser.ie4 ? this.get_ie4_offsetleft(o) : this.get_ie4plus_offsetleft(o));
+	    };
+
+		this.get_ie_adjusted_offsettop = function (o) {
+	        return (Fader.Browser.iemac ? this.get_iemac_offsettop(o) : Fader.Browser.ie4 ? this.get_ie4_offsettop(o) : this.get_ie4plus_offsettop(o));
+	    };
+
+		this.get_ie4plus_offsetleft = function (o) {
+	        var x = 0;
+	        while (typeof(o) != "undefined" && typeof(o.offsetParent) != "unknown" && o.offsetParent != null) {
+	            x += o.offsetLeft;
+	            if (o.offsetParent.tagName != "TABLE" && o.offsetParent.tagName != "TD" && o.offsetParent.tagName != "TR" && o.offsetParent.currentStyle != null) {
+	                var borderLeftWidth = parseInt(o.offsetParent.currentStyle.borderLeftWidth);
+	                if (!isNaN(borderLeftWidth))
+	                    x += borderLeftWidth;
+	            }
+	            if (o.offsetParent.tagName == "TABLE" && o.offsetParent.border > 0)
+	                x += 1;
+	            o = o.offsetParent;
+	        }
+	        if (!Fader.Browser.ie8 && document.compatMode == "CSS1Compat" && o == document.body) {
+	            var marginLeft = parseInt(o.currentStyle.marginLeft);
+	            if (!isNaN(marginLeft))
+	                x += marginLeft;
+	        }
+	        return x;
+	    };
+
+		this.get_ie4plus_offsettop = function (o) {
+	        var y = 0;
+	        while (typeof(o) != "undefined" && typeof(o.offsetParent) != "unknown" && o.offsetParent != null) {
+	            y += o.offsetTop;
+	            if (o.offsetParent.tagName != "TABLE" && o.offsetParent.tagName != "TD" && o.offsetParent.tagName != "TR" && o.offsetParent.currentStyle != null) {
+	                var borderTopWidth = parseInt(o.offsetParent.currentStyle.borderTopWidth);
+	                if (!isNaN(borderTopWidth))
+	                    y += borderTopWidth;
+	            }
+	            if (o.offsetParent.tagName == "TABLE" && o.offsetParent.border > 0)
+	                y += 1;
+	            o = o.offsetParent;
+	        }
+	        if (!Fader.Browser.ie8 && document.compatMode == "CSS1Compat" && o == document.body) {
+	            var marginTop = parseInt(o.currentStyle.marginTop);
+	            if (!isNaN(marginTop))
+	                y += marginTop;
+	        }
+	        return y;
+	    };
+
+		this.get_ie4_offsetleft = function (o) {
+	        var x = 0;
+	        while (o != document.body) {
+	            x += o.offsetLeft;
+	            o = o.offsetParent;
+	        }
+	        return x;
+	    };
+
+		this.get_ie4_offsettop = function (o) {
+	        var y = 0;
+	        while (o != document.body) {
+	            y += o.offsetTop;
+	            o = o.offsetParent;
+	        }
+	        return y;
+	    };
+
+		this.get_iemac_offsetleft = function (o) {
+	        var x = 0;
+	        while (o.offsetParent != document.body) {
+	            x += o.offsetLeft;
+	            o = o.offsetParent;
+	        }
+	        x += (o.offsetLeft + this.getVirtualOffsetLef());
+	        return x;
+	    };
+
+		this.get_iemac_offsettop = function (o) {
+	        var y = 0;
+	        while (o.offsetParent != document.body) {
+	            y += o.offsetTop;
+	            o = o.offsetParent;
+	        }
+	        y += (o.offsetTop + this.getVirtualOffsetTop());
+	        return y;
+	    };
+
+		this.getVirtualOffsetLef = function () {
+	        if (this.virtualOffsetLeft == null) {
+	            if (!document.all["runtime_virtual_offset"])
+	                this.createVirtualPositionElement();
+	            this.virtualOffsetLeft = -document.all["runtime_virtual_offset"].offsetLeft;
+	        }
+	        return this.virtualOffsetLeft;
+	    };
+
+		this.getVirtualOffsetTop = function () {
+	        if (this.virtualOffsetTop == null) {
+	            if (!document.all["runtime_virtual_offset"])
+	                this.createVirtualPositionElement();
+	            this.virtualOffsetTop = -document.all["runtime_virtual_offset"].offsetTop;
+	        }
+	        return this.virtualOffsetTop;
+	    };
+
+		this.createVirtualPositionElement = function () {
+	        document.body.insertAdjacentHTML("beforeEnd", "<div id=\"runtime_virtual_offset\" style=\"position:absolute;left:0;top:0;z-index:-1000;visibility:hidden\">*</div>");
+	    };
+
+		this.get_nonie_adjusted_offsetleft = function (offsetElement) {
+	        var x = 0;
+	        do {
+	            x += offsetElement.offsetLeft;
+	            if (offsetElement.offsetParent) {
+	                if (offsetElement.offsetParent.tagName == "TABLE" && !Fader.Browser.safari && !Fader.Browser.konqueror) {
+	                    if (parseInt(offsetElement.offsetParent.border) > 0)
+	                        x += 1;
+	                }
+	            }
+	        }
+			while ((offsetElement = offsetElement.offsetParent));
+
+			return (Fader.Browser.konqueror ? x + getMarginLeft() : x);
+	    };
+
+		this.get_nonie_adjusted_offsettop = function (offsetElement) {
+	        var y = 0;
+	        do {
+	            y += offsetElement.offsetTop;
+	            if (offsetElement.offsetParent) {
+	                if (offsetElement.offsetParent.tagName == "TABLE" && !Fader.Browser.safari && !Fader.Browser.konqueror) {
+	                    if (parseInt(offsetElement.offsetParent.border) > 0)
+	                        y += 1;
+	                }
+	            }
+	        }
+			while ((offsetElement = offsetElement.offsetParent));
+
+	        return (Fader.Browser.konqueror ? y + getMarginTop() : y);
+	    };
+
+		this.getMarginLeft = function () {
+	        if (this.virtualOffsetLeft == null)
+	            this.virtualOffsetLeft = this.getDocumentMarginLeft();
+	        return this.virtualOffsetLeft;
+	    };
+
+		this.getMarginTop = function () {
+	        if (this.virtualOffsetTop == null)
+	            this.virtualOffsetTop = this.getDocumentMarginTop();
+	        return this.virtualOffsetTop;
+	    };
+
+		this.getDocumentMarginLeft = function () {
+	        if (!isNaN(parseInt(document.body.style.marginLeft)))
+	            return parseInt(document.body.style.marginLeft);
+	        if (!isNaN(parseInt(document.body.style.margin)))
+	            return parseInt(document.body.style.margin);
+	        if (!isNaN(parseInt(document.body.leftMargin)))
+	            return parseInt(document.body.leftMargin);
+	        return 10;
+	    };
+
+		this.getDocumentMarginTop = function () {
+	        if (!isNaN(parseInt(document.body.style.marginTop)))
+	            return parseInt(document.body.style.marginTop);
+	        if (!isNaN(parseInt(document.body.style.margin)))
+	            return parseInt(document.body.style.margin);
+	        if (!isNaN(parseInt(document.body.topMargin)))
+	            return parseInt(document.body.topMargin);
+	        return 10;
+	    };
+
+		this.virtualOffsetLeft = null;
+	    this.virtualOffsetTop = null;
+	};
+
+	Fader.SlidePortion = new function() {
+		this.SLIDE_TYPE = {NONE: 0, EXPONENTIAL_ACCELERATE: 1, EXPONENTIAL_DECELERATE: 2, FADE: 3, QUADRATIC_ACCELERATE: 4, QUADRATIC_DECELERATE: 5};
+		this.completed = function (startTime, fadeDuration, slideType) {
+			if (slideType == this.SLIDE_TYPE.NONE || startTime >= fadeDuration)
+				return 1;
+			var isAccelerate = (slideType == this.SLIDE_TYPE.EXPONENTIAL_ACCELERATE) || (slideType == this.SLIDE_TYPE.QUADRATIC_ACCELERATE);
+			if (isAccelerate)
+				startTime = fadeDuration - startTime;
+			var slideRate = startTime / fadeDuration;
+			var slideStep;
+			switch (slideType) {
+				case this.SLIDE_TYPE.FADE:
+					slideStep = slideRate;
+					break;
+				case this.SLIDE_TYPE.EXPONENTIAL_ACCELERATE:
+				case this.SLIDE_TYPE.EXPONENTIAL_DECELERATE:
+					slideStep = 1 - Math.pow(1 / 300, slideRate);
+					break;
+				case this.SLIDE_TYPE.QUADRATIC_ACCELERATE:
+				case this.SLIDE_TYPE.QUADRATIC_DECELERATE:
+					slideStep = Math.pow(slideRate, 2);
+					break;
+			}
+			if (isAccelerate)
+				slideStep = 1 - slideStep;
+			return Math.min(Math.max(0, slideStep), 1);
+		};
+	};
+
+	var fd = new Fader();
+	fd.template = '<DIV id="prepage" style="position:absolute; font-family:arial; font-size:16px; left:0px; top:0px; background-color:white; height:100%; width:100%;"><TABLE width=100%><TR><TD><B>Loading ... ... Please wait!</B></TD></TR></TABLE></DIV>';
+	fd.fadeDuration = 2500;
+	fd.FadeMaxOpacity = 100;
+	fd.fadeElement = document.getElementById("domElement");
+	fd.onComplete = function(e) {
+		console.log(e);
+	};
+	fd.start(true);
+</script>
+</body>
+</html>

@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+	<title>New document</title>
+	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+	<script type="text/javascript">
+	window.$ajax = {
+		agent: navigator.userAgent.toLowerCase(),
+		isIE: function() { return this.agent.indexOf("msie") > -1; },
+		isFireFox: function() { return this.agent.indexOf("firefox/") > -1; },
+		isSafari: function() { return this.agent.match(/safari/i) != null; },
+		ieVersion: function() {
+			if (this.isIE()) {
+				// UserAgent: Mozilla/4.0 (compatible; MSIE 7.0; Windows NT 5.1; .NET CLR 2.0.50727)
+				if (/MSIE (\d+\.\d+);/.test(this.agent)) //test for MSIE x.x
+					return new Number(RegExp.$1) // capture x.x portion and store as a number
+			}
+
+			return NaN;
+		},
+		isScriptRegistered: function (src, container) {
+			if (!src)
+				return 0;
+			if (!container)
+				container = document;
+			if ($ajax._uniqueScripts == null)
+				$ajax._uniqueScripts = {};
+			var nestedLevel = 0;
+			var startPos = src.indexOf("?d=");
+			var endPos = src.indexOf("&");
+			var scriptSrc = startPos > 0 && endPos > startPos ? src.substring(startPos + 3, endPos) : src;
+			if ($ajax._uniqueScripts[scriptSrc] != null)
+				return 2;
+			var scriptElements = document.getElementsByTagName("script");
+			for (var i = 0, len = scriptElements.length; i < len; i++) {
+				var scriptElement = scriptElements[i];
+				if (scriptElement.src) {
+					if (scriptElement.getAttribute("src", 2).indexOf(scriptSrc) != -1) {
+						$ajax._uniqueScripts[scriptSrc] = true;
+						if (!$ajax.isDescendant(container, scriptElement))
+							nestedLevel++;
+					}
+				}
+			}
+
+			return nestedLevel;
+		},
+		isDescendant: function (ancestor, node) {
+			try {
+				for (var parent = node.parentNode; parent != null; parent = parent.parentNode) {
+					if (parent == ancestor)
+						return true;
+				}
+			} catch (e) {}
+			return false;
+		},
+		loadClientScript: function (src) {
+			if (!this.shouldIncludeClientScript(src))
+				return;
+			var xhttp = (window.XMLHttpRequest) ? new XMLHttpRequest() : new ActiveXObject("Microsoft.XMLHTTP");
+			xhttp.open("GET", src, false);
+			xhttp.send(null);
+			if (xhttp.status == 200) {
+				var content = xhttp.responseText;
+				this.evalScriptCode(content);
+			}
+		},
+		shouldIncludeClientScript: function (src) {
+			var included = this.isScriptRegistered(src);
+			if (included == 0 || included > 1)
+				return false;
+			return true;
+		},
+		evalScriptCode: function (src) {
+			if (this.isSafari())
+				src = src.replace(/^\s*<!--((.|\n)*)-->\s*$/mi, "$1");
+			var scriptElement = document.createElement("script");
+			scriptElement.setAttribute("type", "text/javascript");
+			if (this.isSafari())
+				scriptElement.appendChild(document.createTextNode(src));
+			else
+				scriptElement.text = src;
+			var headElement = document.getElementsByTagName("head")[0];
+			headElement.appendChild(scriptElement);
+			if (this.isSafari())
+				scriptElement.innerHTML = "";
+			else
+				scriptElement.parentNode.removeChild(scriptElement);
+		},
+		getTags: function (html, tagName) {
+			var tags = [];
+			var content = html;
+			while (true) {
+				var tag = this.getTag(content, tagName);
+				if (tag.index == -1)
+					break;
+				tags[tags.length] = tag;
+				var startPos = tag.index + tag.outer.length;
+				content = content.substring(startPos, content.length);
+			}
+			return tags;
+		},
+		getTag: function (html, tagName, def) {
+			if (typeof(def) == "undefined")
+				def = "";
+			var regex = new RegExp("<" + tagName + "[^>]*>((.|\n|\r)*?)</" + tagName + ">", "i");
+			var match = html.match(regex);
+			if (match != null && match.length >= 2) {
+				return {
+					outer: match[0],
+					inner: match[1],
+					index: match.index
+				};
+			} else {
+				return {
+					outer: def,
+					inner: def,
+					index: -1
+				};
+			}
+		},
+		getLinkHrefs: function (html) {
+			var content = html;
+			var hrefs = [];
+			while (true) {
+				var match = content.match(/<link[^>]*href\s*=\s*('|")?([^'"]*)('|")?([^>]*)>.*?(<\/link>)?/i);
+				if (match == null || match.length < 3)
+					break;
+				var href = match[2];
+				hrefs[hrefs.length] = href;
+				var startPos = match.index + href.length;
+				content = content.substring(startPos, content.length);
+			}
+			return hrefs;
+		},
+		getScriptsSrc: function (html) {
+			var content = html;
+			var scriptsSrc = [];
+			while (1) {
+				var match = content.match(/<script[^>]*src\s*=\s*('|")?([^'"]*)('|")?([^>]*)>.*?(<\/script>)?/i);
+				if (match == null || match.length < 3)
+				break;
+				var src = match[2];
+				scriptsSrc[scriptsSrc.length] = src;
+				var startPos = match.index + src.length;
+				content = content.substring(startPos, content.length);
+			}
+			return scriptsSrc;
+		},
+		trim: function(s) {
+			if (s == null || typeof s != "string")
+				return null;
+			return s.replace(/^\s+|\s+$/g, "");
+		}
+	};
+
+	function extractAttributes(html, selfclosing) {
+		//var tag_pattern = "(\\w+)\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\"'\\s>]*)";
+		var tag_pattern = "local\\s*=\\s*(\"[^\"]*\"|'[^']*'|[^\"'\\s>]*)";
+	    tag_pattern = new RegExp(tag_pattern, "ig");
+		var matches = html.match(tag_pattern);
+		if (matches == null)
+			return [];
+		var attributes = [];
+		for(var i = 0, len = matches.length; i < len; i++) {
+			var match = [];
+			match[0] = matches[i];
+			match[1] = $ajax.trim(match[0].substring(0, matches[i].indexOf("=")));
+			match[2] = $ajax.trim(match[0].substring(matches[i].indexOf("=") + 1));
+			if ((match[2][0] == "\"" || match[2][0] == "'") && match[2][0] == match[2][match[2].length - 1])
+				 	match[2] = match[2].substring(1, match[2].length - 1);
+			var attribute = [];
+			attribute["name"] = match[1];
+			attribute["value"] = match[2];
+			attributes[attributes.length] = attribute;
+
+		}
+
+		return attributes;
+	}
+
+	function doParse() {
+		var el = document.getElementById("html");
+		var html = new String(el.value);
+		/*
+		var scripts = $ajax.getScriptsSrc(html);
+		console.log(scripts);
+
+		console.log("-------------------------------------");
+		var tags = $ajax.getTags(html, "script");
+		console.log(tags);
+
+		console.log("content=" + html);
+		*/
+		extractAttributes(html);
+	}
+	</script>
+</head>
+<body>
+<textarea id="html" rows="25" cols="480"></textarea><br />
+<input type="button" value="Parse" onclick="doParse()" />
+</body>
+</html>
